@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library - Register</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="bg-blue-600 p-6 text-white flex justify-between items-center">
+            <h1 class="text-xl font-bold flex items-center gap-2"><i data-lucide="user-plus"></i> Create Account</h1>
+            <a href="index.html" class="text-sm border border-white/30 px-3 py-1 rounded hover:bg-white/10">Login</a>
+        </div>
+        <div class="p-8">
+            <div id="status" class="hidden mb-4 p-3 rounded text-sm text-center"></div>
+            <form id="regForm" class="space-y-6">
+                <div class="bg-blue-50 p-4 rounded-xl flex items-center justify-between">
+                    <span class="font-bold text-blue-800">Role:</span>
+                    <select id="role" class="p-2 border rounded-lg outline-none">
+                        <option value="Student">Student</option>
+                        <option value="Staff">Staff</option>
+                        <option value="Admin">Admin</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-gray-400 text-xs uppercase">Basic Info</h3>
+                        <input type="text" id="name" placeholder="Full Name" required class="w-full p-2 border rounded-lg">
+                        <input type="email" id="email" placeholder="Email" required class="w-full p-2 border rounded-lg">
+                        <input type="password" id="password" placeholder="Password" required class="w-full p-2 border rounded-lg">
+                        <input type="tel" id="mobile" placeholder="Mobile Number" required class="w-full p-2 border rounded-lg">
+                        <div class="grid grid-cols-2 gap-2">
+                            <select id="gender" class="p-2 border rounded-lg"><option>Male</option><option>Female</option></select>
+                            <input type="date" id="dob" required class="p-2 border rounded-lg">
+                        </div>
+                    </div>
+                    <div id="roleFields" class="space-y-4">
+                        <h3 class="font-bold text-gray-400 text-xs uppercase">Academic Details</h3>
+                        <div class="student-only space-y-4">
+                            <input type="text" id="regNo" placeholder="Registration Number" class="w-full p-2 border rounded-lg">
+                            <input type="text" id="dept" placeholder="Department" class="w-full p-2 border rounded-lg">
+                            <input type="text" id="course" placeholder="Course" class="w-full p-2 border rounded-lg">
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="number" id="year" placeholder="Year" class="p-2 border rounded-lg">
+                                <input type="number" id="sem" placeholder="Semester" class="p-2 border rounded-lg">
+                            </div>
+                        </div>
+                        <div class="staff-only hidden space-y-4">
+                            <input type="text" id="staffDept" placeholder="Department" class="w-full p-2 border rounded-lg">
+                            <input type="text" id="degree" placeholder="Degree" class="w-full p-2 border rounded-lg">
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" id="submitBtn" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-700 transition-all">Register</button>
+            </form>
+        </div>
+    </div>
+    <script type="module">
+        import { auth, db } from './js/app.js';
+        import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        import { doc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        lucide.createIcons();
+
+        const roleSelect = document.getElementById('role');
+        roleSelect.onchange = (e) => {
+            document.querySelector('.student-only').classList.toggle('hidden', e.target.value !== 'Student');
+            document.querySelector('.staff-only').classList.toggle('hidden', e.target.value !== 'Staff');
+        };
+
+        document.getElementById('regForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const status = document.getElementById('status');
+            btn.disabled = true; btn.textContent = 'Processing...';
+
+            try {
+                const email = document.getElementById('email').value;
+                const pass = document.getElementById('password').value;
+                const role = roleSelect.value;
+                const userCred = await createUserWithEmailAndPassword(auth, email, pass);
+                
+                const data = {
+                    uid: userCred.user.uid,
+                    name: document.getElementById('name').value,
+                    email: email,
+                    role: role,
+                    isApproved: (role === 'Admin'),
+                    mobile: document.getElementById('mobile').value
+                };
+                
+                await setDoc(doc(db, 'users', userCred.user.uid), data);
+                status.className = "mb-4 p-3 rounded text-sm text-center bg-green-100 text-green-700";
+                status.textContent = "Success! Redirecting...";
+                status.classList.remove('hidden');
+                setTimeout(() => window.location.href = 'index.html', 2000);
+            } catch (err) {
+                status.className = "mb-4 p-3 rounded text-sm text-center bg-red-100 text-red-700";
+                status.textContent = err.message;
+                status.classList.remove('hidden');
+                btn.disabled = false; btn.textContent = 'Register';
+            }
+        };
+    </script>
+</body>
+</html>
