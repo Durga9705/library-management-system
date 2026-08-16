@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-blue-600 min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden">
+        <div class="p-8 text-center">
+            <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="library" class="text-blue-600 w-8 h-8"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-800">Library Connect</h1>
+            <p class="text-gray-500 text-sm mt-1">Sign in to your account</p>
+        </div>
+        <div class="p-8 pt-0">
+            <div id="error" class="hidden mb-4 p-3 bg-red-100 text-red-700 text-xs rounded-lg"></div>
+            <form id="loginForm" class="space-y-4">
+                <input type="email" id="email" placeholder="Email Address" required class="w-full p-3 border border-gray-200 rounded-xl outline-none focus:border-blue-600">
+                <input type="password" id="password" placeholder="Password" required class="w-full p-3 border border-gray-200 rounded-xl outline-none focus:border-blue-600">
+                <button type="submit" id="loginBtn" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-all">Sign In</button>
+            </form>
+            <div class="mt-6 text-center text-sm">
+                <p class="text-gray-600">New user? <a href="register.html" class="text-blue-600 font-bold">Register Now</a></p>
+            </div>
+        </div>
+    </div>
+    <script type="module">
+        import { auth, db, MASTER_ADMIN_EMAIL, MASTER_ADMIN_PASS } from './js/app.js';
+        import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        lucide.createIcons();
+
+        document.getElementById('loginForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('loginBtn');
+            const errorDiv = document.getElementById('error');
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+
+            btn.disabled = true; btn.textContent = 'Verifying...';
+            errorDiv.classList.add('hidden');
+
+            try {
+                if (email === MASTER_ADMIN_EMAIL && pass === MASTER_ADMIN_PASS) {
+                    window.location.href = 'dashboard.html';
+                    return;
+                }
+                const userCred = await signInWithEmailAndPassword(auth, email, pass);
+                const userDoc = await getDoc(doc(db, 'users', userCred.user.uid));
+                
+                if (userDoc.exists() && (userDoc.data().isApproved || userDoc.data().role === 'Admin')) {
+                    window.location.href = 'dashboard.html';
+                } else {
+                    errorDiv.textContent = "Account not approved by admin.";
+                    errorDiv.classList.remove('hidden');
+                    await signOut(auth);
+                }
+            } catch (err) {
+                errorDiv.textContent = "Invalid credentials!";
+                errorDiv.classList.remove('hidden');
+            }
+            btn.disabled = false; btn.textContent = 'Sign In';
+        };
+    </script>
+</body>
+</html>
